@@ -1,0 +1,694 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="TOME-Math: learning mathematical reasoning from the structure of textbooks.">
+  <meta name="theme-color" content="#f5f5f7">
+  <title>TOME-Math — Structured Mathematical Supervision</title>
+  <link rel="stylesheet" href="styles.css?v=27">
+  <script>
+    window.MathJax = {
+      tex: {
+        inlineMath: [['\\(', '\\)']],
+        displayMath: [['\\[', '\\]']]
+      },
+      options: {
+        skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+      }
+    };
+  </script>
+  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-chtml.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <main id="main">
+    <section class="hero" id="top">
+      <div class="hero-inner reveal">
+        <h1><span class="title-line">Scaling Mathematical Proof Supervision</span><span class="title-line">from Structured Textbooks</span></h1>
+        <p class="authors">
+          <span class="author-line"><span class="author-block"><a href="https://github.com/fangyouqing" target="_blank" rel="noopener noreferrer">Youqing Fang</a><sup>1,3,*</sup></span>, <span class="author-block"><a href="https://huahenry.github.io/" target="_blank" rel="noopener noreferrer">Zhouqi Hua</a><sup>2,3,*</sup></span>, <span class="author-block"><a href="https://github.com/tangyinhao" target="_blank" rel="noopener noreferrer">Yinhao Tang</a><sup>1,3</sup></span>, <span class="author-block"><a href="https://guyuzhe.site/" target="_blank" rel="noopener noreferrer">Yuzhe Gu</a><sup>3,4</sup></span>, <span class="author-block"><a href="https://github.com/Debouter" target="_blank" rel="noopener noreferrer">Lingkai Kong</a><sup>3,4</sup></span></span>
+          <span class="author-line"><span class="author-block"><a href="https://scholar.google.com/citations?user=kReWULQAAAAJ&amp;hl=en" target="_blank" rel="noopener noreferrer">Bin Liu</a><sup>1</sup></span>, <span class="author-block"><a href="https://scholar.google.com/citations?user=eTCfl6cAAAAJ&amp;hl=en" target="_blank" rel="noopener noreferrer">Weiming Zhang</a><sup>1</sup></span>, <span class="author-block"><a href="https://chenkai.site/" target="_blank" rel="noopener noreferrer">Kai Chen</a><sup>3</sup></span>, <span class="author-block"><a href="https://nowsyn.github.io/" target="_blank" rel="noopener noreferrer">Yanan Sun</a><sup>3,†</sup></span>, <span class="author-block"><a href="https://zhangwenwei.cn/" target="_blank" rel="noopener noreferrer">Wenwei Zhang</a><sup>3,†</sup></span></span>
+        </p>
+        <p class="affiliations">
+          <span class="affiliation-line"><span class="affiliation-block"><sup>1</sup> University of Science and Technology of China</span><span class="affiliation-block"><sup>2</sup> Fudan University</span></span>
+          <span class="affiliation-line"><span class="affiliation-block"><sup>3</sup> Shanghai AI Laboratory</span><span class="affiliation-block"><sup>4</sup> Shanghai Jiao Tong University</span></span>
+        </p>
+        <p class="contribution"><sup>*</sup> Equal contribution &nbsp;&nbsp; <sup>†</sup> Corresponding authors</p>
+        <div class="resource-links" id="resources" aria-label="Project resources; links coming soon">
+          <span class="resource-link" aria-disabled="true"><span class="resource-icon arxiv">Report</span> (coming soon)</span>
+          <span class="resource-link" aria-disabled="true"><span class="resource-icon" aria-hidden="true">◉</span>Dataset (coming soon)</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="introduction section" id="introduction">
+      <div class="section-inner">
+        <div class="intro-heading reveal">
+          <h2><span class="intro-icon" aria-hidden="true">🚀</span><span>Brief Introduction</span></h2>
+        </div>
+
+        <div class="intro-copy reveal">
+          <p>Mathematical supervision for language models is typically flattened into isolated problem–solution pairs, discarding the curricular organization and evidential structure of the original sources. We introduce <strong>TOME-Math</strong> (<strong>T</strong>extbook-<strong>O</strong>riented <strong>M</strong>athematical <strong>E</strong>vidence), a large-scale corpus that converts 2,118 textbooks spanning the core areas of university-level mathematics into approximately 380K structured proof-supervision records while preserving chapter order, proposition–proof links, dependency references, and source provenance.</p>
+          <p>Leveraging these structural signals, we explore curriculum learning across multiple mathematical subjects and characterize scaling patterns with supervision volume and source breadth. At full scale, fine-tuning on TOME-Math raises the unweighted mean score across our held-out evaluations and established public benchmarks by <strong>16.7 percentage points</strong> over the base model, while exceeding all three public instruction-data baselines evaluated in aggregate. Our findings highlight structured textbooks as both a scalable source of mathematical supervision and an empirical framework for studying the impact of data organization on mathematical reasoning.</p>
+        </div>
+
+        <figure class="intro-figure reveal">
+          <div class="figure-frame selectable-figure-frame" style="--figure-ratio: 661.92 / 315.12;">
+              <object id="figure-1" class="selectable-figure" data="assets/figure-1.svg?v=30" data-svg-figure type="image/svg+xml" aria-label="Figure 1: comparison between traditional isolated QA pipelines and the structure-preserving TOME-Math pipeline"><a href="assets/figure-1.svg?v=30" target="_blank" rel="noopener">Open figure 1</a></object>
+              <a class="figure-open" href="assets/figure-1.svg?v=30" target="_blank" rel="noopener" aria-label="Open figure 1 in a new tab" title="Open figure">↗</a>
+            </div>
+          <figcaption class="intro-caption">
+            <p><strong>Overview of TOME-Math.</strong> Traditional pipelines flatten heterogeneous sources into isolated QA, while TOME-Math preserves textbook structure through structured QA construction and curriculum-based supervision.</p>
+          </figcaption>
+        </figure>
+
+        <div class="intro-structure" id="overview">
+          <div class="metrics reveal">
+            <div class="metric"><strong class="count-up" data-count="380292">380,292</strong><span>QA pairs</span></div>
+            <div class="metric"><strong class="count-up" data-count="2118">2,118</strong><span>textbooks</span></div>
+            <div class="metric"><strong class="count-up" data-count="66537">66,537</strong><span>chapters</span></div>
+            <div class="metric"><strong class="count-up" data-count="29">29</strong><span>target math subjects</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="figures section" id="figures">
+      <div class="section-inner">
+        <div class="section-title construction-title reveal">
+          <h2>Construction and characterization.</h2>
+          <p>How the corpus is built, filtered, and evaluated for quality.</p>
+        </div>
+
+        <article class="paper-figure reveal">
+          <div class="figure-heading">
+            <div><h3>Construction pipeline</h3></div>
+            <p>Textbook selection, hierarchical chapter recovery, Proof QA and Gap QA extraction, followed by five quality-control checks.</p>
+          </div>
+          <div class="figure-frame vector-object-frame">
+            <object class="vector-object" data="assets/figure-2.svg" type="image/svg+xml" aria-label="Figure 2: full TOME-Math data collection, chapter extraction, proof QA generation, and quality validation pipeline">
+              <a href="assets/figure-2.svg" target="_blank" rel="noopener">Open Figure 2 as a scalable vector graphic</a>
+            </object>
+          </div>
+        </article>
+
+        <article class="paper-figure reveal">
+          <div class="figure-heading">
+            <div><h3>Composition and quality</h3></div>
+            <p>The construction funnel shows how generated candidates become the final corpus; the radar plot compares model configurations across quality criteria.</p>
+          </div>
+          <div class="figure-three">
+            <div class="figure-frame selectable-figure-frame" style="--figure-ratio: 728 / 460;">
+              <object id="figure-3a" class="selectable-figure" data="assets/figure-3a.svg?v=13" data-svg-figure type="image/svg+xml" aria-label="Figure 3a: dataset construction and filtering funnel"><a href="assets/figure-3a.svg?v=13" target="_blank" rel="noopener">Open figure 3a</a></object>
+              <a class="figure-open" href="assets/figure-3a.svg?v=13" target="_blank" rel="noopener" aria-label="Open figure 3a in a new tab" title="Open figure">↗</a>
+            </div>
+            <div class="figure-frame radar selectable-figure-frame" style="--figure-ratio: 521.4941 / 556.4677;">
+              <object id="figure-3b" class="selectable-figure" data="assets/figure-3b.svg?v=31" data-svg-figure type="image/svg+xml" aria-label="Figure 3b: model quality comparison radar chart"><a href="assets/figure-3b.svg?v=31" target="_blank" rel="noopener">Open figure 3b</a></object>
+              <a class="figure-open" href="assets/figure-3b.svg?v=31" target="_blank" rel="noopener" aria-label="Open figure 3b in a new tab" title="Open figure">↗</a>
+            </div>
+          </div>
+        </article>
+
+        <div class="construction-part" id="data">
+          <div class="subsection-heading reveal">
+            <h3>Dataset composition</h3>
+            <p>Proof QA captures complete proposition–proof units. Gap QA turns missing local proof obligations into explicit training targets.</p>
+          </div>
+
+          <div class="distribution-grid reveal">
+            <article class="qa-split">
+              <div>
+                <p class="chart-title">QA composition</p>
+                <div class="donut" role="img" aria-label="205,861 Proof QA and 174,431 Gap QA">
+                  <div><strong>380K</strong><span>total</span></div>
+                </div>
+              </div>
+              <div class="legend">
+                <div><i class="proof"></i><span>Proof QA</span><strong class="count-up" data-count="205861">205,861</strong><small>54.1%</small></div>
+                <div><i class="gap"></i><span>Gap QA</span><strong class="count-up" data-count="174431">174,431</strong><small>45.9%</small></div>
+              </div>
+            </article>
+
+            <article class="scale-card">
+              <p class="chart-title">Corpus hierarchy</p>
+              <div class="scale-row"><span>Subjects</span><strong class="count-up" data-count="29">29</strong></div>
+              <div class="scale-row"><span>Books</span><strong class="count-up" data-count="2118">2,118</strong></div>
+              <div class="scale-row"><span>Chapters</span><strong class="count-up" data-count="66537">66,537</strong></div>
+              <div class="scale-row"><span>QA records</span><strong class="count-up" data-count="380292">380,292</strong></div>
+            </article>
+          </div>
+
+          <article class="subject-panel reveal">
+            <div class="chart-header">
+              <div><p class="chart-title">Subject distribution</p><h4>Largest fields in the release candidate</h4></div>
+              <div class="metric-switch" role="group" aria-label="Subject distribution metric">
+                <button class="active" data-metric="qa" aria-pressed="true">QA pairs</button>
+                <button data-metric="books" aria-pressed="false">Books</button>
+                <button data-metric="chapters" aria-pressed="false">Chapters</button>
+              </div>
+            </div>
+            <div class="subject-chart" id="subject-chart" aria-live="polite"></div>
+            <p class="chart-footnote">Top 10 target subjects.</p>
+          </article>
+
+
+          <div class="dataset-examples" id="examples">
+          <div class="examples-heading reveal">
+            <h4>Representative supervision pairs</h4>
+            <p>Each textbook proposition yields a complete Proof QA and focused Gap QA that make its intermediate proof obligations explicit.</p>
+          </div>
+
+          <div class="example-shell reveal">
+            <div class="subject-tabs" role="tablist" aria-label="Choose a mathematical subject">
+            <button class="active" role="tab" aria-selected="true" aria-controls="sample-differential-geometry" id="tab-differential-geometry" data-sample="differential-geometry">Differential Geometry</button>
+            <button role="tab" aria-selected="false" aria-controls="sample-discrete-mathematics" id="tab-discrete-mathematics" data-sample="discrete-mathematics" tabindex="-1">Discrete Mathematics</button>
+            <button role="tab" aria-selected="false" aria-controls="sample-probability" id="tab-probability" data-sample="probability" tabindex="-1">Probability</button>
+            <button role="tab" aria-selected="false" aria-controls="sample-abstract-algebra" id="tab-abstract-algebra" data-sample="abstract-algebra" tabindex="-1">Abstract Algebra</button>
+            <button role="tab" aria-selected="false" aria-controls="sample-mathematical-analysis" id="tab-mathematical-analysis" data-sample="mathematical-analysis" tabindex="-1">Mathematical Analysis</button>
+            <button role="tab" aria-selected="false" aria-controls="sample-topology" id="tab-topology" data-sample="topology" tabindex="-1">Topology</button>
+            </div>
+
+          <div class="sample-panel active" id="sample-differential-geometry" role="tabpanel" aria-labelledby="tab-differential-geometry" data-panel="differential-geometry">
+            <header class="sample-heading">
+              <div><p>Differential Geometry</p><h5>Triangle inequality in the hyperbolic plane</h5><span>Geometry: From Isometries to Special Relativity</span></div>
+              <span class="quality-badge">Quality A</span>
+            </header>
+            <details class="source-excerpt content-disclosure">
+              <summary class="content-summary">
+                <span class="step-label"><span>01</span> Original textbook excerpt</span>
+                <span class="content-summary-copy"><strong>Chapter 4.2 · \(\mathbb H^2\) shortest paths</strong><small>Read the source theorem and textbook proof</small></span>
+                <span class="disclosure-icon" aria-hidden="true"></span>
+              </summary>
+              <div class="disclosure-body">
+                <p class="source-location"><span>Parsed chapter Markdown</span> Chapter 4.2 · \(\mathbb H^2\) shortest paths</p>
+                <div class="source-document rich-text">According to Theorem 4.9, we can formulate a triangle inequality for the hyperbolic plane.
+Corollary 4.11 (Triangle inequality for the hyperbolic plane). For three points \(p_{1}, p_{2}\) , and \(p_{3}\) in the hyperbolic plane,\[d_{\mathbb{H}^{2}}(p_{1}, p_{3}) \leq d_{\mathbb{H}^{2}}(p_{1}, p_{2}) + d_{\mathbb{H}^{2}}(p_{2}, p_{3}),\]where the equality holds if and only if \(p_{2}\) lies on the \(\mathbb{H}^{2}\) - shortest path from \(p_{1}\) to \(p_{3}\) .
+Proof. Let \(\gamma_{ij}\) be the \(\mathbb{H}^{2}\) - shortest path from \(p_{i}\) to \(p_{j}\) for \(1 \leq i &lt; j \leq 3\) . Then,\[d_{\mathbb{H}^{2}}(p_{i}, p_{j}) = l_{\mathbb{H}^{2}}(\gamma_{ij}).\]Note that the union (denoted by \(\delta\) ) of \(\gamma_{12}\) and \(\gamma_{23}\) is a path from \(p_{1}\) to \(p_{3}\) (Figure 4.6). According to Theorem 4.9,\[d_{\mathbb{H}^{2}}(p_{1}, p_{2}) + d_{\mathbb{H}^{2}}(p_{2}, p_{3}) = l_{\mathbb{H}^{2}}(\delta) \geq l_{\mathbb{H}^{2}}(\gamma_{13}) = d_{\mathbb{H}^{2}}(p_{1}, p_{3}),\]and the equality holds if and only if \(\delta\) has the same path as \(\gamma_{13}\) , which means that point \(p_{2}\) lies on path \(\gamma_{13}\) . \(\square\)</div>
+              </div>
+            </details>
+            <div class="qa-example-grid">
+              <article class="qa-example proof-example">
+                <details class="content-disclosure">
+                  <summary class="content-summary">
+                    <span class="step-label"><span>02</span> Proof QA</span>
+                    <span class="content-summary-copy"><strong>Recover the complete textbook proof.</strong><small>Open the generated question</small></span>
+                    <span class="disclosure-icon" aria-hidden="true"></span>
+                  </summary>
+                  <div class="disclosure-body">
+                    <section class="qa-part qa-question-part">
+                      <p class="qa-section-label">Question</p>
+                      <div class="qa-question rich-text">Let \(p_1,p_2,p_3\) be points in the hyperbolic plane \(\mathbb H^2\). Prove the triangle inequality\[d_{\mathbb H^2}(p_1,p_3)\le d_{\mathbb H^2}(p_1,p_2)+d_{\mathbb H^2}(p_2,p_3),\]and prove that equality holds if and only if \(p_2\) lies on the unique hyperbolic shortest path from \(p_1\) to \(p_3\).</div>
+                    </section>
+                    <section class="qa-part qa-answer-part">
+                      <p class="qa-section-label">Answer</p>
+                      <div class="answer-text rich-text">Let \(\gamma_{ij}\) be the hyperbolic shortest path from \(p_i\) to \(p_j\), and set \(\delta=\gamma_{12}*\gamma_{23}\). Then\[l_{\mathbb H^2}(\delta)=l_{\mathbb H^2}(\gamma_{12})+l_{\mathbb H^2}(\gamma_{23})=d_{\mathbb H^2}(p_1,p_2)+d_{\mathbb H^2}(p_2,p_3).\]Since \(\gamma_{13}\) is a shortest path from \(p_1\) to \(p_3\),\[d_{\mathbb H^2}(p_1,p_3)=l_{\mathbb H^2}(\gamma_{13})\le l_{\mathbb H^2}(\delta),\]which proves the triangle inequality.
+If equality holds, then \(\delta\) is also a shortest path from \(p_1\) to \(p_3\). Uniqueness implies that \(\delta\) and \(\gamma_{13}\) have the same trajectory, so \(p_2\in\gamma_{13}\). Conversely, if \(p_2\) lies on \(\gamma_{13}\), splitting \(\gamma_{13}\) at \(p_2\) gives two shortest subpaths whose lengths add, and equality follows.</div>
+                    </section>
+                  </div>
+                </details>
+              </article>
+              <article class="qa-example gap-example">
+                <details class="content-disclosure">
+                  <summary class="content-summary">
+                    <span class="step-label"><span>03</span> Gap QA</span>
+                    <span class="content-summary-copy"><strong>Make one intermediate proof obligation explicit.</strong><small>Open the generated question</small></span>
+                    <span class="disclosure-icon" aria-hidden="true"></span>
+                  </summary>
+                  <div class="disclosure-body">
+                    <section class="qa-part qa-question-part">
+                      <p class="qa-section-label">Question</p>
+                      <div class="qa-question rich-text">Let \(p_1,p_2,p_3\in\mathbb H^2\). For \(1\le i&lt;j\le3\), let \(\gamma_{ij}\) denote the unique hyperbolic shortest path from \(p_i\) to \(p_j\), and let \(\delta=\gamma_{12}*\gamma_{23}\) be their concatenation through \(p_2\). Assume that\[d_{\mathbb H^2}(p_1,p_3)=d_{\mathbb H^2}(p_1,p_2)+d_{\mathbb H^2}(p_2,p_3).\]Prove that \(\delta\) has the same trajectory as \(\gamma_{13}\), and hence that \(p_2\) lies on the hyperbolic shortest path from \(p_1\) to \(p_3\).</div>
+                    </section>
+                    <section class="qa-part qa-answer-part">
+                      <p class="qa-section-label">Answer</p>
+                      <div class="answer-text rich-text">By construction,\[l_{\mathbb H^2}(\delta)=d_{\mathbb H^2}(p_1,p_2)+d_{\mathbb H^2}(p_2,p_3).\]The assumed equality therefore gives \(l_{\mathbb H^2}(\delta)=d_{\mathbb H^2}(p_1,p_3)\). Thus \(\delta\) attains the minimum possible length among all paths from \(p_1\) to \(p_3\), so it is itself a hyperbolic shortest path.
+The shortest path between two points of \(\mathbb H^2\) is unique up to reparametrization. Hence \(\delta\) and \(\gamma_{13}\) have the same trajectory. Since \(\delta\) passes through \(p_2\) by construction, \(p_2\) lies on \(\gamma_{13}\).</div>
+                    </section>
+                  </div>
+                </details>
+              </article>
+            </div>
+          </div>
+
+          <div class="sample-panel" id="sample-discrete-mathematics" role="tabpanel" aria-labelledby="tab-discrete-mathematics" data-panel="discrete-mathematics" hidden>
+            <header class="sample-heading">
+              <div><p>Discrete Mathematics</p><h5>Spectrum of a strongly regular graph</h5><span>Elementary Methods of Graph Ramsey Theory</span></div>
+              <span class="quality-badge">Quality A</span>
+            </header>
+            <details class="source-excerpt content-disclosure">
+              <summary class="content-summary">
+                <span class="step-label"><span>01</span> Original textbook excerpt</span>
+                <span class="content-summary-copy"><strong>Chapter 2.6 · Spectrum and independence number</strong><small>Read the source theorem and textbook proof</small></span>
+                <span class="disclosure-icon" aria-hidden="true"></span>
+              </summary>
+              <div class="disclosure-body">
+                <p class="source-location"><span>Parsed chapter Markdown</span> Chapter 2.6 · Spectrum and independence number</p>
+                <div class="source-document rich-text">The spectrum of a strongly regular graph is determined completely by its four parameters as follows. As \(\lambda\) is used often to signify an eigenvalue, we change the notation \(s r g(n,d,\lambda ,\mu)\) to \(s r g(n,d,\mu_{1},\mu_{2})\) to avoid interference.
+Theorem 2.15 Let \(G\) be a connected strongly regular graph \(s r g(n,d,\mu_{1},\mu_{2})\) with \(n\geq 3\) . If \(G\) is neither complete nor empty, then \(\lambda_{1} = d\) is an eigenvalue with multiplicity \(m_{1} = 1\) , and any other eigenvalue \(\lambda (\neq \lambda_{1})\) satisfies\[\lambda^{2} + (\mu_{2} - \mu_{1})\lambda +(\mu_{2} - d) = 0.\]The equation has two distinct solutions \(\lambda_{2}\) and \(\lambda_{3}\) with \(\lambda_{2} &gt; 0 &gt; \lambda_{3}\) , and \(\lambda_{3}\) is an eigenvalue. If \(d + (n - 1)\lambda_{3}\neq 0\) , then \(\lambda_{2}\) is also an eigenvalue. Their multiplicities \(m_{2}\) and \(m_{3}\) can be determined by\[m_{2} + m_{3} = n - 1,\mathrm{and}\ d + m_{2}\lambda_{2} + m_{3}\lambda_{3} = 0.\]Proof. Let \(A\) be the adjacency matrix of \(G\) . Let \(I\) and \(J\) be the \(n\times n\) identity matrix and all-one matrix, respectively. By the definition of \(A\) and the fact that \(A\) is symmetric with zeros on the main diagonal, the \((i,i)\)-entry of \(A^{2}\) is \(d(\nu_{i}) = d\) , which can be represented by \(dI\) . For \(i\neq j\) , the \((i,j)\)-entry of \(A^{2}\) counts common neighbors of vertices \(\nu_{i}\) and \(\nu_{j}\) , so it is \(\mu_{1}\) or \(\mu_{2}\) , which can be represented by \(\mu_{1}A\) or \(\mu_{2}(J - I - A)\) , respectively. Also the regularity of \(G\) can be represented by \(AJ = dJ\) . So \(G\) is an \(s r g(n,d,\mu_{1},\mu_{2})\) is equivalent to\[AJ = dJ,\qquad A^{2} = (d - \mu_{2})I + (\mu_{1} - \mu_{2})A + \mu_{2}J.\]From Perron-Frobenius Theorem, we have that \(\lambda_{1} = d\) is an eigenvalue of \(G\) with multiplicity 1 with eigenvector \(\mathbf{1} = (1,1,\ldots ,1)^{T}\) . Let \(\lambda \neq d\) be another eigenvalue of \(G\) and \(x\in \mathbb R^{n}\) a corresponding eigenvector. Thus \(Jx = 0\) by noting \(\mathbf{1}^{T}x = 0\) since eigenvectors corresponding to distinct eigenvalues of real symmetric matrix are orthogonal. As \(Ax = \lambda x\) and \(A^{2}x = \lambda^{2}x\) , we obtain that\[\lambda^{2}x = (d - \mu_{2})x + (\mu_{1} - \mu_{2})\lambda x,\]which implies that \(\lambda\) must satisfy\[\lambda^{2} + (\mu_{2} - \mu_{1})\lambda +(\mu_{2} - d) = 0. \quad (2.4)\]The equation has two distinct solutions \(\lambda_{2}\) and \(\lambda_{3}\) (\(\lambda_{2} &gt; \lambda_{3}\)). Since the smallest eigenvalue of \(G\) is negative, it follows that \(\lambda_{3}\) is an eigenvalue. Thus, if \(d + (n - 1)\lambda_{3}\neq 0\) , then the multiplicity of \(\lambda_{3}\) cannot be \(n - 1\) , and \(G\) has another eigenvalue, which must be \(\lambda_{2}\) . Also, their multiplicities \(m_{2}\) and \(m_{3}\) satisfy\[1 + m_{2} + m_{3} = n,\qquad \mathrm{Tr}(A) = d + m_{2}\lambda_{2} + m_{3}\lambda_{3} = 0,\]which determine \(m_{2}\) and \(m_{3}\) completely.</div>
+              </div>
+            </details>
+            <div class="qa-example-grid">
+              <article class="qa-example proof-example">
+                <details class="content-disclosure">
+                  <summary class="content-summary">
+                    <span class="step-label"><span>02</span> Proof QA</span>
+                    <span class="content-summary-copy"><strong>Recover the complete textbook proof.</strong><small>Open the generated question</small></span>
+                    <span class="disclosure-icon" aria-hidden="true"></span>
+                  </summary>
+                  <div class="disclosure-body">
+                    <section class="qa-part qa-question-part">
+                      <p class="qa-section-label">Question</p>
+                      <div class="qa-question rich-text">Let \(G\) be a connected strongly regular graph with parameters \((n,d,\mu_1,\mu_2)\), where \(n\ge3\), and assume that \(G\) is neither complete nor empty. Prove that \(d\) is an eigenvalue of multiplicity one and that every other eigenvalue satisfies\[\lambda^2+(\mu_2-\mu_1)\lambda+(\mu_2-d)=0.\]If the roots are \(\lambda_2&gt;\lambda_3\), prove that \(\lambda_2&gt;0&gt;\lambda_3\) and that \(\lambda_3\) is an eigenvalue. Show that \(\lambda_2\) is also an eigenvalue whenever \(d+(n-1)\lambda_3\ne0\), and determine the equations satisfied by their multiplicities.</div>
+                    </section>
+                    <section class="qa-part qa-answer-part">
+                      <p class="qa-section-label">Answer</p>
+                      <div class="answer-text rich-text">Let \(A\) be the adjacency matrix of \(G\). Strong regularity gives\[AJ=dJ,\qquad A^2=(d-\mu_2)I+(\mu_1-\mu_2)A+\mu_2J.\]Because \(G\) is connected and \(d\)-regular, the Perron–Frobenius theorem shows that \(d\) is an eigenvalue of multiplicity one with eigenvector \(\mathbf1\).
+Let \(Ax=\lambda x\) with \(\lambda\ne d\). Since \(A\) is real symmetric, \(x\perp\mathbf1\), and hence \(Jx=0\). Applying the matrix identity to \(x\) yields\[\lambda^2x=(d-\mu_2)x+(\mu_1-\mu_2)\lambda x,\]so \(\lambda\) satisfies the displayed quadratic equation. The equation has two distinct real roots, with the larger root positive. Since \(\operatorname{tr}(A)=0\) while \(d&gt;0\), a negative eigenvalue must occur; therefore \(\lambda_3&lt;0\) and \(\lambda_3\) is an eigenvalue.
+If \(d+(n-1)\lambda_3\ne0\), the multiplicity of \(\lambda_3\) cannot be \(n-1\), because otherwise the trace would equal that nonzero quantity. Thus the other root \(\lambda_2\) must also occur. If their multiplicities are \(m_2\) and \(m_3\), dimension and trace give\[m_2+m_3=n-1,\qquad d+m_2\lambda_2+m_3\lambda_3=0.\]These two equations determine \(m_2\) and \(m_3\).</div>
+                    </section>
+                  </div>
+                </details>
+              </article>
+              <article class="qa-example gap-example">
+                <details class="content-disclosure">
+                  <summary class="content-summary">
+                    <span class="step-label"><span>03</span> Gap QA</span>
+                    <span class="content-summary-copy"><strong>Make one intermediate proof obligation explicit.</strong><small>Open the generated question</small></span>
+                    <span class="disclosure-icon" aria-hidden="true"></span>
+                  </summary>
+                  <div class="disclosure-body">
+                    <section class="qa-part qa-question-part">
+                      <p class="qa-section-label">Question</p>
+                      <div class="qa-question rich-text">Let \(G\) be a connected strongly regular graph with parameters \((n,d,\mu_1,\mu_2)\), and assume that \(G\) is neither complete nor empty. Every nonprincipal eigenvalue of its adjacency matrix is one of the two distinct real roots \(\lambda_2&gt;\lambda_3\) of\[\lambda^2+(\mu_2-\mu_1)\lambda+(\mu_2-d)=0.\]Prove that \(\lambda_3&lt;0\) and that \(\lambda_3\) must occur as an eigenvalue of \(G\).</div>
+                    </section>
+                    <section class="qa-part qa-answer-part">
+                      <p class="qa-section-label">Answer</p>
+                      <div class="answer-text rich-text">The adjacency matrix \(A\) has zero diagonal, so \(\operatorname{tr}(A)=0\) and the sum of its eigenvalues, counted with multiplicity, is zero. Its principal eigenvalue is \(d&gt;0\). If every other eigenvalue were nonnegative, their sum together with \(d\) would be positive, a contradiction. Hence a negative nonprincipal eigenvalue exists. Since every nonprincipal eigenvalue is either \(\lambda_2\) or \(\lambda_3\) and \(\lambda_2&gt;\lambda_3\), it follows that \(\lambda_3&lt;0\).
+Suppose that \(\lambda_3\) did not occur. Then \(A\) would act as \(\lambda_2 I\) on \(\mathbf1^\perp\) and as multiplication by \(d\) on \(\operatorname{span}\{\mathbf1\}\). Consequently,\[A=\lambda_2 I+\frac{d-\lambda_2}{n}J.\]All off-diagonal entries of \(A\) would therefore be equal. Because an adjacency matrix has off-diagonal entries only in \(\{0,1\}\), the graph would have to be empty or complete, contradicting the hypothesis. Thus \(\lambda_3\) is an eigenvalue of \(G\).</div>
+                    </section>
+                  </div>
+                </details>
+              </article>
+            </div>
+          </div>
+
+          <div class="sample-panel" id="sample-probability" role="tabpanel" aria-labelledby="tab-probability" data-panel="probability" hidden>
+            <header class="sample-heading">
+              <div><p>Probability</p><h5>Moments of the beta distribution</h5><span>Probability and Statistics, 4th ed.</span></div>
+              <span class="quality-badge">Quality A</span>
+            </header>
+            <details class="source-excerpt content-disclosure">
+              <summary class="content-summary">
+                <span class="step-label"><span>01</span> Original textbook excerpt</span>
+                <span class="content-summary-copy"><strong>Chapter 5.8 · The beta distributions</strong><small>Read the source theorem and textbook proof</small></span>
+                <span class="disclosure-icon" aria-hidden="true"></span>
+              </summary>
+              <div class="disclosure-body">
+                <p class="source-location"><span>Parsed chapter Markdown</span> Chapter 5.8 · The beta distributions</p>
+                <div class="source-document rich-text"><span class="source-section-title">Moments of Beta Distributions</span>
+Theorem 5.8.3
+Moments. Suppose that \(X\) has the beta distribution with parameters \(\alpha\) and \(\beta\) . Then for each positive integer \(k\) ,\[E(X^{k}) = \frac{\alpha(\alpha + 1)\cdot\cdot\cdot(\alpha + k - 1)}{(\alpha + \beta)(\alpha + \beta + 1)\cdot\cdot\cdot(\alpha + \beta + k - 1)}. \quad (5.8.6)\]In particular,\[E(X) = \frac{\alpha}{\alpha + \beta},\]\[\mathrm{Var}(X) = \frac{\alpha\beta}{(\alpha + \beta)^{2}(\alpha + \beta + 1)}.\]
+Proof For \(k = 1,2,\ldots\)\[E(X^{k}) = \int_{0}^{1}x^{k}f(x|\alpha ,\beta)dx\]\[= \frac{\Gamma(\alpha + \beta)}{\Gamma(\alpha)\Gamma(\beta)}\int_{0}^{1}x^{\alpha +k - 1}(1 - x)^{\beta -1}dx.\]
+Therefore, by Eq. (5.8.2),\[E(X^{k}) = \frac{\Gamma(\alpha + \beta)}{\Gamma(\alpha)\Gamma(\beta)}\cdot \frac{\Gamma(\alpha + k)\Gamma(\beta)}{\Gamma(\alpha + k + \beta)},\]which simplifies to Eq. (5.8.6). The special case of the mean is simple, while the variance follows easily from
+\[E(X^{2}) = \frac{\alpha(\alpha + 1)}{(\alpha + \beta)(\alpha + \beta + 1)}.\]</div>
+              </div>
+            </details>
+            <div class="qa-example-grid">
+              <article class="qa-example proof-example">
+                <details class="content-disclosure">
+                  <summary class="content-summary">
+                    <span class="step-label"><span>02</span> Proof QA</span>
+                    <span class="content-summary-copy"><strong>Recover the complete textbook proof.</strong><small>Open the generated question</small></span>
+                    <span class="disclosure-icon" aria-hidden="true"></span>
+                  </summary>
+                  <div class="disclosure-body">
+                    <section class="qa-part qa-question-part">
+                      <p class="qa-section-label">Question</p>
+                      <div class="qa-question rich-text">Let \(X\sim\operatorname{Beta}(\alpha,\beta)\) with density\[f(x)=\frac{\Gamma(\alpha+\beta)}{\Gamma(\alpha)\Gamma(\beta)}x^{\alpha-1}(1-x)^{\beta-1},\qquad 0&lt;x&lt;1.\]Prove that for every positive integer \(k\),\[E(X^k)=\frac{\alpha(\alpha+1)\cdots(\alpha+k-1)}{(\alpha+\beta)(\alpha+\beta+1)\cdots(\alpha+\beta+k-1)},\]and use this formula to compute \(E(X)\) and \(\operatorname{Var}(X)\).</div>
+                    </section>
+                    <section class="qa-part qa-answer-part">
+                      <p class="qa-section-label">Answer</p>
+                      <div class="answer-text rich-text">Using the density and the beta integral,\[E(X^k)=\frac{\Gamma(\alpha+\beta)}{\Gamma(\alpha)\Gamma(\beta)}\int_0^1x^{\alpha+k-1}(1-x)^{\beta-1}\,dx\]\[=\frac{\Gamma(\alpha+\beta)}{\Gamma(\alpha)\Gamma(\beta)}\frac{\Gamma(\alpha+k)\Gamma(\beta)}{\Gamma(\alpha+\beta+k)}.\]
+The identity \(\Gamma(z+k)=z(z+1)\cdots(z+k-1)\Gamma(z)\) yields the stated moment formula. Taking \(k=1\) and \(k=2\) gives\[E(X)=\frac{\alpha}{\alpha+\beta},\qquad E(X^2)=\frac{\alpha(\alpha+1)}{(\alpha+\beta)(\alpha+\beta+1)}.\]Finally,
+\[\operatorname{Var}(X)=E(X^2)-[E(X)]^2=\frac{\alpha\beta}{(\alpha+\beta)^2(\alpha+\beta+1)}.\]</div>
+                    </section>
+                  </div>
+                </details>
+              </article>
+              <article class="qa-example gap-example">
+                <details class="content-disclosure">
+                  <summary class="content-summary">
+                    <span class="step-label"><span>03</span> Gap QA</span>
+                    <span class="content-summary-copy"><strong>Make one intermediate proof obligation explicit.</strong><small>Open the generated question</small></span>
+                    <span class="disclosure-icon" aria-hidden="true"></span>
+                  </summary>
+                  <div class="disclosure-body">
+                    <section class="qa-part qa-question-part">
+                      <p class="qa-section-label">Question</p>
+                      <div class="qa-question rich-text">Let \(X\sim\operatorname{Beta}(\alpha,\beta)\), where \(\alpha,\beta&gt;0\). Suppose that\[E(X)=\frac{\alpha}{\alpha+\beta},\qquad E(X^2)=\frac{\alpha(\alpha+1)}{(\alpha+\beta)(\alpha+\beta+1)}.\]Use \(\operatorname{Var}(X)=E(X^2)-[E(X)]^2\) to derive the variance of \(X\).</div>
+                    </section>
+                    <section class="qa-part qa-answer-part">
+                      <p class="qa-section-label">Answer</p>
+                      <div class="answer-text rich-text">Substitution and a common denominator give\[\operatorname{Var}(X)=\frac{\alpha(\alpha+1)(\alpha+\beta)-\alpha^2(\alpha+\beta+1)}{(\alpha+\beta)^2(\alpha+\beta+1)}.\]The numerator simplifies as\[\alpha(\alpha+1)(\alpha+\beta)-\alpha^2(\alpha+\beta+1)=\alpha\beta.\]Therefore,
+\[\operatorname{Var}(X)=\frac{\alpha\beta}{(\alpha+\beta)^2(\alpha+\beta+1)}.\]</div>
+                    </section>
+                  </div>
+                </details>
+              </article>
+            </div>
+          </div>
+
+          <div class="sample-panel" id="sample-abstract-algebra" role="tabpanel" aria-labelledby="tab-abstract-algebra" data-panel="abstract-algebra" hidden>
+            <header class="sample-heading">
+              <div><p>Abstract Algebra</p><h5>Orbit–stabilizer correspondence</h5><span>Algebra, 2nd ed. · Michael Artin</span></div>
+              <span class="quality-badge">Quality A</span>
+            </header>
+            <details class="source-excerpt content-disclosure">
+              <summary class="content-summary">
+                <span class="step-label"><span>01</span> Original textbook excerpt</span>
+                <span class="content-summary-copy"><strong>Chapter 6.8 · Action on cosets</strong><small>Read the source theorem and textbook proof</small></span>
+                <span class="disclosure-icon" aria-hidden="true"></span>
+              </summary>
+              <div class="disclosure-body">
+                <p class="source-location"><span>Parsed chapter Markdown</span> Chapter 6.8 · Action on cosets</p>
+                <div class="source-document rich-text">下面的命题(有时叫轨道一稳定子定理)表明如何通过在陪集上的作用来刻画任意群作用.
+【6.8.4】命题令 \(S\) 是群 \(G\) 作用的集合,且 \(s\) 是 \(S\) 的元素.设 \(H\) 与 \(O_{i}\) 分别是 \(s\) 的稳定子与轨道,则存在一个由 \([a H] \sim a s\) 定义的双射 \(\epsilon : G / H \to O_{i}\) .这个映射与群的作用相容: \(\epsilon (g[C]) = g \epsilon ([C])\) 对每一个陪集 \(C\) 与 \(G\) 的每个元素 \(g\) 成立.
+例如,二面体群 \(D_{5}\) 作用于正五边形顶点.令 \(\nu\) 表示顶点集合,令 \(H\) 是一个特殊顶点的稳定子.存在双射 \(D_{5} / H \to \nu\) .在平面 \(P\) 的等距群 \(M\) 作用下,一个点的轨道是 \(P\) 的所有点的集合,原点的稳定子是正交算子群 \(O_{2}\) ,且存在一个双射 \(M / O_{2} \to P\) .类似地,如果 \(H\) 表示一条直线的稳定子,且 \(C\) 表示平面上所有点的集合,则存在双射 \(M / H \to C\) .
+命题6.8.4的证明显然,命题叙述中定义的映射 \(\epsilon\) 与群的作用相容,如果它存在的话,在符号上, \(\epsilon\) 简单地用符号 \(s\) 替换了 \(H\) .究竟法则 \([g H] \sim g s\) 能否定义一个映射并不清楚,因为许多符号 \(g H\) 代表的是同一个陪集,所以我们必须证明如果 \(a\) 和 \(b\) 是群元素且如果陪集 \(a H = b H\) ,则也有 \(a s = b s\) .假设 \(a H = b H\) .则 \(a^{- 1} b\) 属于 \(H(2.8.5)\) .因为 \(H\) 是 \(s\) 的稳定子,故 \(a^{- 1} b s = s\),所以 \(a s = b s\) .我们的定义是合理的,且由反向推理知, \(\epsilon\) 是单射.由于 \(\epsilon\) 映 \([g H]\) 为 \(g s\) 且 \(g s\) 可以为 \(O_{i}\) 的任意元素,所以 \(\epsilon\) 是满射也是单射.</div>
+              </div>
+            </details>
+            <div class="qa-example-grid">
+              <article class="qa-example proof-example">
+                <details class="content-disclosure">
+                  <summary class="content-summary">
+                    <span class="step-label"><span>02</span> Proof QA</span>
+                    <span class="content-summary-copy"><strong>Recover the complete textbook proof.</strong><small>Open the generated question</small></span>
+                    <span class="disclosure-icon" aria-hidden="true"></span>
+                  </summary>
+                  <div class="disclosure-body">
+                    <section class="qa-part qa-question-part">
+                      <p class="qa-section-label">Question</p>
+                      <div class="qa-question rich-text">设群 \(G\) 作用在集合 \(S\) 上，固定 \(s\in S\)，并令 \(H=\{g\in G:gs=s\}\) 为 \(s\) 的稳定子，\(O_s=\{gs:g\in G\}\) 为 \(s\) 的轨道。证明\[\epsilon:G/H\longrightarrow O_s,\qquad \epsilon(aH)=as\]是一个良定义的双射，并证明它与 \(G\) 的作用相容，即 \(\epsilon(g(aH))=g\epsilon(aH)\)。</div>
+                    </section>
+                    <section class="qa-part qa-answer-part">
+                      <p class="qa-section-label">Answer</p>
+                      <div class="answer-text rich-text">首先证明良定义性。若 \(aH=bH\)，则 \(a^{-1}b\in H\)，所以 \((a^{-1}b)s=s\)，从而 \(as=bs\)。因此 \(\epsilon(aH)\) 与陪集代表元的选取无关。
+若 \(\epsilon(aH)=\epsilon(bH)\)，则 \(as=bs\)，故 \((a^{-1}b)s=s\)，即 \(a^{-1}b\in H\)，于是 \(aH=bH\)。所以 \(\epsilon\) 是单射。
+任取 \(x\in O_s\)。由轨道的定义，存在 \(g\in G\) 使 \(x=gs\)，而 \(x=\epsilon(gH)\)，所以 \(\epsilon\) 是满射。因此 \(\epsilon\) 是双射。
+最后，对任意 \(g,a\in G\)，\[\epsilon(g(aH))=\epsilon((ga)H)=(ga)s=g(as)=g\epsilon(aH),\]故该双射与群作用相容。</div>
+                    </section>
+                  </div>
+                </details>
+              </article>
+              <article class="qa-example gap-example">
+                <details class="content-disclosure">
+                  <summary class="content-summary">
+                    <span class="step-label"><span>03</span> Gap QA</span>
+                    <span class="content-summary-copy"><strong>Make one intermediate proof obligation explicit.</strong><small>Open the generated question</small></span>
+                    <span class="disclosure-icon" aria-hidden="true"></span>
+                  </summary>
+                  <div class="disclosure-body">
+                    <section class="qa-part qa-question-part">
+                      <p class="qa-section-label">Question</p>
+                      <div class="qa-question rich-text">设群 \(G\) 作用在集合 \(S\) 上，固定 \(s\in S\)。令\[H=\{g\in G:gs=s\},\qquad O_s=\{gs:g\in G\}.\]定义映射 \(\epsilon:G/H\to O_s\) 为 \(\epsilon(aH)=as\)。假设该映射已经证明为良定义。证明 \(\epsilon\) 是单射；也就是说，对任意 \(a,b\in G\)，若 \(\epsilon(aH)=\epsilon(bH)\)，则 \(aH=bH\)。</div>
+                    </section>
+                    <section class="qa-part qa-answer-part">
+                      <p class="qa-section-label">Answer</p>
+                      <div class="answer-text rich-text">设 \(\epsilon(aH)=\epsilon(bH)\)，则 \(as=bs\)。在等式两边施加 \(a^{-1}\) 的作用，得到\[s=(a^{-1}b)s.\]由稳定子 \(H\) 的定义，\(a^{-1}b\in H\)。而左陪集相等的判定条件给出\[a^{-1}b\in H\quad\Longleftrightarrow\quad aH=bH.\]因此 \(\epsilon(aH)=\epsilon(bH)\) 蕴含 \(aH=bH\)，故 \(\epsilon\) 是单射。</div>
+                    </section>
+                  </div>
+                </details>
+              </article>
+            </div>
+          </div>
+
+          <div class="sample-panel" id="sample-mathematical-analysis" role="tabpanel" aria-labelledby="tab-mathematical-analysis" data-panel="mathematical-analysis" hidden>
+            <header class="sample-heading">
+              <div><p>Mathematical Analysis</p><h5>Taylor’s theorem with Peano remainder</h5><span>Mathematical Analysis Lecture Notes, 6th ed.</span></div>
+              <span class="quality-badge">Quality A</span>
+            </header>
+            <details class="source-excerpt content-disclosure">
+              <summary class="content-summary">
+                <span class="step-label"><span>01</span> Original textbook excerpt</span>
+                <span class="content-summary-copy"><strong>Chapter 6.11 · Taylor formula</strong><small>Read the source theorem and textbook proof</small></span>
+                <span class="disclosure-icon" aria-hidden="true"></span>
+              </summary>
+              <div class="disclosure-body">
+                <p class="source-location"><span>Parsed chapter Markdown</span> Chapter 6.11 · Taylor formula</p>
+                <div class="source-document rich-text">下面讨论用泰勒多项式 \(T_{n}(x)\) 近似代替函数 \(f(x)\) , 其泰勒余项 \(R_{n}(x)\) 的性质 (定性的和定量的). 这是本节讨论的主要问题. 关于 \(R_{n}(x)\) 的定性的性质有下面的定理:
+定理1(泰勒定理) 若函数 \(f(x)\) 在 \(a\) 存在 \(n\) 阶导数 \(①\) , 则 \(\forall x \in U(a)\) , 有\[f(x) = T_{n}(x) + o\left[\left(x - a\right)^{n}\right], \quad (1)\]其中\[T_{n}(x) = f(a) + \frac{f^{\prime}(a)}{1!} (x - a) + \frac{f^{\prime \prime}(a)}{2!} (x - a)^{2} + \dots +\frac{f^{(n)}(a)}{n!} (x - a)^{n};\]\(R_{n}(x) = o\left[\left(x - a\right)^{n}\right](x \to a)\) , 即 \(R_{n}(x)\) 是 \((x - a)^{n}\) 的高阶无穷小.
+(1)式称为函数 \(f(x)\) 在 \(a\) (展开)的泰勒公式.
+证法 由高阶无穷小的定义, 只需证明\[\lim_{x \to a} \frac{R_{n}(x)}{(x - a)^{n}} = \lim_{x \to a} \frac{f(x) - T_{n}(x)}{(x - a)^{n}} = 0.\]这是 \(\frac{0}{0}\) 的待定型, 应用 \(n - 1\) 次洛必达法则.
+证明 \(R_{n}(x) = f(x) - T_{n}(x)\)\[= f(x) - \left[f(a) + \frac{f^{\prime}(a)}{1!} (x - a) + \dots +\frac{f^{(n)}(a)}{n!} (x - a)^{n}\right],\]\[R_{n}^{\prime}(x) = f^{\prime}(x) - \left[f^{\prime}(a) + \frac{f^{\prime \prime}(a)}{1!} (x - a) + \dots +\frac{f^{(n)}(a)}{(n - 1)!} (x - a)^{n - 1}\right],\]\[R_{n}^{\prime \prime}(x) = f^{\prime \prime}(x) - \left[f^{\prime \prime}(a) + \frac{f^{\prime \prime \prime}(a)}{1!} (x - a) + \dots +\frac{f^{(n)}(a)}{(n - 2)!} (x - a)^{n - 2}\right],\]\[\dots\]\[R_{n}^{(n - 1)}(x) = f^{(n - 1)}(x) - \left[f^{(n - 1)}(a) + \frac{f^{(n)}(a)}{1!} (x - a)\right].\](对它不能再求导数.)当 \(x\rightarrow a\) 时,显然, \(R_{n}(x)\) , \(R_{n}^{\prime}(x)\) ,…, \(R_{n}^{(n - 1)}(x)\) 以及 \((x - a)^{k}\) \((k\in \mathbf{N}_{+})\) 都是无穷小.于是,由洛必达法则,有\[\lim_{x\to a}\frac{R_{n}(x)}{(x - a)^{n}} = \lim_{x\to a}\frac{R_{n}^{\prime}(x)}{n(x - a)^{n - 1}} = \dots = \lim_{x\to a}\frac{R_{n}^{(n - 1)}(x)}{(x - a)}\]\[\qquad = \frac{1}{n!}\lim_{x\to a}\left[\frac{f^{(n - 1)}(x) - f^{(n - 1)}(a)}{x - a} -f^{(n)}(a)\right] = 0.\]
+特别地,当 \(a = 0\) 时,(1)式称为麦克劳林公式. 定理1给出的余项 \(R_{n}(x) = o\left[(x - a)^{n}\right]\) 称为佩亚诺余项.</div>
+              </div>
+            </details>
+            <div class="qa-example-grid">
+              <article class="qa-example proof-example">
+                <details class="content-disclosure">
+                  <summary class="content-summary">
+                    <span class="step-label"><span>02</span> Proof QA</span>
+                    <span class="content-summary-copy"><strong>Recover the complete textbook proof.</strong><small>Open the generated question</small></span>
+                    <span class="disclosure-icon" aria-hidden="true"></span>
+                  </summary>
+                  <div class="disclosure-body">
+                    <section class="qa-part qa-question-part">
+                      <p class="qa-section-label">Question</p>
+                      <div class="qa-question rich-text">设函数 \(f\) 在点 \(a\) 的一个邻域内具有直到 \(n\) 阶的导数。令\[T_n(x)=\sum_{k=0}^{n}\frac{f^{(k)}(a)}{k!}(x-a)^k.\]证明带佩亚诺余项的泰勒公式
+\[f(x)=T_n(x)+o((x-a)^n),\qquad x\to a.\]</div>
+                    </section>
+                    <section class="qa-part qa-answer-part">
+                      <p class="qa-section-label">Answer</p>
+                      <div class="answer-text rich-text">令 \(R_n(x)=f(x)-T_n(x)\)。只需证明\[\lim_{x\to a}\frac{R_n(x)}{(x-a)^n}=0.\]由 \(T_n\) 的构造，对 \(0\le k\le n-1\) 有 \(R_n^{(k)}(a)=0\)。连续应用 \(n-1\) 次洛必达法则，得到\[\lim_{x\to a}\frac{R_n(x)}{(x-a)^n}=\lim_{x\to a}\frac{R_n^{(n-1)}(x)}{n!(x-a)}.\]而\[R_n^{(n-1)}(x)=f^{(n-1)}(x)-f^{(n-1)}(a)-f^{(n)}(a)(x-a),\]所以\[\frac{R_n^{(n-1)}(x)}{n!(x-a)}=\frac1{n!}\left[\frac{f^{(n-1)}(x)-f^{(n-1)}(a)}{x-a}-f^{(n)}(a)\right].\]括号内第一项在 \(x\to a\) 时趋于 \(f^{(n)}(a)\)，故整个极限为零。因此 \(R_n(x)=o((x-a)^n)\)，即
+\[f(x)=T_n(x)+o((x-a)^n).\]</div>
+                    </section>
+                  </div>
+                </details>
+              </article>
+              <article class="qa-example gap-example">
+                <details class="content-disclosure">
+                  <summary class="content-summary">
+                    <span class="step-label"><span>03</span> Gap QA</span>
+                    <span class="content-summary-copy"><strong>Make one intermediate proof obligation explicit.</strong><small>Open the generated question</small></span>
+                    <span class="disclosure-icon" aria-hidden="true"></span>
+                  </summary>
+                  <div class="disclosure-body">
+                    <section class="qa-part qa-question-part">
+                      <p class="qa-section-label">Question</p>
+                      <div class="qa-question rich-text">设 \(f\) 在 \(a\) 的邻域内具有直到 \(n\) 阶的导数，并定义 \(R_n(x)=f(x)-T_n(x)\)。已知\[R_n^{(n-1)}(x)=f^{(n-1)}(x)-f^{(n-1)}(a)-f^{(n)}(a)(x-a).\]证明\[\lim_{x\to a}\frac{R_n^{(n-1)}(x)}{n!(x-a)}=0,\]并说明这一步如何完成佩亚诺余项证明中的最后一次极限计算。</div>
+                    </section>
+                    <section class="qa-part qa-answer-part">
+                      <p class="qa-section-label">Answer</p>
+                      <div class="answer-text rich-text">先作代数变形：\[\frac{R_n^{(n-1)}(x)}{n!(x-a)}=\frac1{n!}\left[\frac{f^{(n-1)}(x)-f^{(n-1)}(a)}{x-a}-f^{(n)}(a)\right].\]因为 \(f^{(n-1)}\) 在 \(a\) 处可微，其导数为 \(f^{(n)}(a)\)，所以\[\lim_{x\to a}\frac{f^{(n-1)}(x)-f^{(n-1)}(a)}{x-a}=f^{(n)}(a).\]由极限的线性运算，所求极限等于\[\frac1{n!}\bigl(f^{(n)}(a)-f^{(n)}(a)\bigr)=0.\]此前对 \(R_n(x)/(x-a)^n\) 连续应用 \(n-1\) 次洛必达法则后恰得到上述极限，因此这一步证明了 \(R_n(x)=o((x-a)^n)\)。</div>
+                    </section>
+                  </div>
+                </details>
+              </article>
+            </div>
+          </div>
+
+          <div class="sample-panel" id="sample-topology" role="tabpanel" aria-labelledby="tab-topology" data-panel="topology" hidden>
+            <header class="sample-heading">
+              <div><p>Topology</p><h5>Algebra of interior operators</h5><span>Lectures on General Topology</span></div>
+              <span class="quality-badge">Quality A</span>
+            </header>
+            <details class="source-excerpt content-disclosure">
+              <summary class="content-summary">
+                <span class="step-label"><span>01</span> Original textbook excerpt</span>
+                <span class="content-summary-copy"><strong>Chapter 2.6 · Interior</strong><small>Read the source theorem and textbook proof</small></span>
+                <span class="disclosure-icon" aria-hidden="true"></span>
+              </summary>
+              <div class="disclosure-body">
+                <p class="source-location"><span>Parsed chapter Markdown</span> Chapter 2.6 · Interior</p>
+                <div class="source-document rich-text">推论2.31 \((X,T)\) 是拓扑空间, \(A\subset X\) . \(A\) 是开集的充要条件是 \(A = A^{\circ}\)
+定理2.32 \((X,T)\) 是拓扑空间, \(A\subset X\) , \(B\subset X\) ,集合的内部具有如下性质:
+(1) \(A^{\circ}\subset A\)
+(2) \(X^{\circ} = X\)
+(3) \((A\bigcap B)^{\circ} = A^{\circ}\bigcap B^{\circ}\)
+(4) \((A^{\circ})^{\circ} = A^{\circ}\)
+(5)若 \(A\subset B\) ,则 \(A^{\circ}\subset B^{\circ}\)
+证明(4)可由推论2.31及定理2.30可得.(1)、(2)与(5)可由定义得到,下面只说明(3).
+由于 \(A^{\circ}\subset A,B^{\circ}\subset B\) ,于是有 \(A^{\circ}\bigcap B^{\circ}\subset A\bigcap B\) ,因此 \((A^{\circ}\bigcap B^{\circ})^{\circ}\subset (A\bigcap B)^{\circ}\) 而 \((A^{\circ}\bigcap B^{\circ})^{\circ} = A^{\circ}\bigcap B^{\circ}\) ,因此 \(A^{\circ}\bigcap B^{\circ}\subset (A\bigcap B)^{\circ}\) .其次对任意 \(x\in (A\bigcap B)^{\circ}\) 存在开集 \(V_{x}\) ,使得 \(x\in V_{x}\subset A\bigcap B\) ,因此 \(x\in A^{\circ}\) , \(x\in B^{\circ}\) ,即 \(x\in A^{\circ}\bigcap B^{\circ}\) ,这样 \((A\bigcap B)^{\circ}\subset A^{\circ}\bigcap B^{\circ}\) ,因此 \((A\bigcap B)^{\circ} = A^{\circ}\bigcap B^{\circ}\) 口
+但应注意, \((A\bigcup B)^{\circ}\) 不一定与 \(A^{\circ}\bigcup B^{\circ}\) 相同.例如:在 \(R\) 中, \(A = [0,1],B =\) (1,2],则 \(A^{\circ} = (0,1),B^{\circ} = (1,2)\) ,但 \(A\bigcup B = [0,2]\) ,因此 \((A\bigcup B)^{\circ} = (0,2)\) ,而 \(1\notin A^{\circ}\bigcup B^{\circ}\)</div>
+              </div>
+            </details>
+            <div class="qa-example-grid">
+              <article class="qa-example proof-example">
+                <details class="content-disclosure">
+                  <summary class="content-summary">
+                    <span class="step-label"><span>02</span> Proof QA</span>
+                    <span class="content-summary-copy"><strong>Recover the complete textbook proof.</strong><small>Open the generated question</small></span>
+                    <span class="disclosure-icon" aria-hidden="true"></span>
+                  </summary>
+                  <div class="disclosure-body">
+                    <section class="qa-part qa-question-part">
+                      <p class="qa-section-label">Question</p>
+                      <div class="qa-question rich-text">设 \((X,T)\) 是拓扑空间，\(A,B\subset X\)。证明集合的内部满足：
+1. \(A^\circ\subset A\)；
+2. \(X^\circ=X\)；
+3. \((A\cap B)^\circ=A^\circ\cap B^\circ\)；
+4. \((A^\circ)^\circ=A^\circ\)；
+5. 若 \(A\subset B\)，则 \(A^\circ\subset B^\circ\)。
+并举例说明 \((A\cup B)^\circ\) 不一定等于 \(A^\circ\cup B^\circ\)。</div>
+                    </section>
+                    <section class="qa-part qa-answer-part">
+                      <p class="qa-section-label">Answer</p>
+                      <div class="answer-text rich-text">(1) 由内部的定义，内点首先属于原集合，所以 \(A^\circ\subset A\)。
+(2) \(X\) 是开集，且每个 \(x\in X\) 都有开邻域 \(X\subset X\)，故 \(X^\circ=X\)。
+(3) 因 \(A^\circ\cap B^\circ\) 是开集且包含于 \(A\cap B\)，有 \(A^\circ\cap B^\circ\subset(A\cap B)^\circ\)。反之，若 \(x\in(A\cap B)^\circ\)，则存在开集 \(V\) 使 \(x\in V\subset A\cap B\)，所以 \(x\in A^\circ\cap B^\circ\)。因此两者相等。
+(4) \(A^\circ\) 是开集，而开集等于其内部，故 \((A^\circ)^\circ=A^\circ\)。
+(5) 若 \(x\in A^\circ\)，则存在开集 \(V\) 使 \(x\in V\subset A\subset B\)，所以 \(x\in B^\circ\)。
+最后在 \(\mathbb R\) 的通常拓扑中取 \(A=[0,1]\)、\(B=(1,2]\)。则 \(A^\circ=(0,1)\)、\(B^\circ=(1,2)\)，而 \((A\cup B)^\circ=(0,2)\)。点 \(1\) 属于前者但不属于 \(A^\circ\cup B^\circ\)，故二者不一定相等。</div>
+                    </section>
+                  </div>
+                </details>
+              </article>
+              <article class="qa-example gap-example">
+                <details class="content-disclosure">
+                  <summary class="content-summary">
+                    <span class="step-label"><span>03</span> Gap QA</span>
+                    <span class="content-summary-copy"><strong>Make one intermediate proof obligation explicit.</strong><small>Open the generated question</small></span>
+                    <span class="disclosure-icon" aria-hidden="true"></span>
+                  </summary>
+                  <div class="disclosure-body">
+                    <section class="qa-part qa-question-part">
+                      <p class="qa-section-label">Question</p>
+                      <div class="qa-question rich-text">设 \((X,T)\) 是拓扑空间，\(A\subset X\)。已知：
+1. \(A^\circ\) 是开集；
+2. 集合 \(U\) 为开集当且仅当 \(U=U^\circ\)。
+证明内部运算具有幂等性：
+\[(A^\circ)^\circ=A^\circ.\]</div>
+                    </section>
+                    <section class="qa-part qa-answer-part">
+                      <p class="qa-section-label">Answer</p>
+                      <div class="answer-text rich-text">由已知条件 1，\(A^\circ\) 是开集。将已知条件 2 应用于集合 \(U=A^\circ\)，立即得到\[A^\circ=(A^\circ)^\circ.\]交换等号两边即有 \((A^\circ)^\circ=A^\circ\)。
+也可直接验证两边包含：对任意集合 \(B\) 都有 \(B^\circ\subset B\)，故 \((A^\circ)^\circ\subset A^\circ\)；另一方面，\(A^\circ\) 本身是开集且包含于自身，所以其每一点都是 \(A^\circ\) 的内点，故 \(A^\circ\subset(A^\circ)^\circ\)。</div>
+                    </section>
+                  </div>
+                </details>
+              </article>
+            </div>
+          </div>
+
+            <p class="sample-note">Textbook excerpts come directly from parsed chapter Markdown. QA wording is expert-edited for self-containment and to prevent answer leakage; each pair remains grounded in the same source record.</p>
+          </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="result section" id="experiments">
+      <div class="section-inner">
+        <div class="experiment-title reveal"><h2>Results and insights</h2></div>
+
+        <article class="experiment-block main-result reveal" aria-labelledby="overall-result-title">
+          <div class="experiment-heading">
+
+            <h3 id="overall-result-title">Stronger mathematical reasoning.</h3>
+          </div>
+          <div class="result-highlights">
+            <p><strong><span class="count-up" data-count="16.7" data-decimals="1" data-prefix="+">+16.7</span> <span class="metric-unit">pp</span></strong><span>average gain over the base model</span></p>
+          </div>
+          <div class="table-shell" role="region" aria-label="Full-corpus benchmark comparison; scroll horizontally on small screens" tabindex="0">
+            <table class="benchmark-table" aria-describedby="benchmark-note benchmark-key">
+              <caption class="visually-hidden">Full-corpus comparison. Scores are percentages; Avg. is the unweighted mean of all six evaluations. Bold indicates the best score in each column.</caption>
+              <thead><tr><th scope="col">SFT corpus</th><th scope="col">TOME-LongForm</th><th scope="col">TOME-Objective</th><th scope="col">MiniF2F</th><th scope="col">ProofNet</th><th scope="col">MATH-500</th><th scope="col">AIME-26</th><th scope="col" class="average-column">Avg.</th></tr></thead>
+              <tbody>
+                <tr class="base-row"><th scope="row">Base model <span>No SFT</span></th><td>13.25</td><td>32.93</td><td>34.45</td><td>17.14</td><td>68.80</td><td>8.44</td><td class="average-column">29.17</td></tr>
+                <tr><th scope="row">OpenMath1 <span>1.82M</span></th><td>20.16</td><td>33.86</td><td>22.87</td><td>19.25</td><td>70.40</td><td>8.21</td><td class="average-column">29.13</td></tr>
+                <tr><th scope="row">MetaMath <span>395K</span></th><td>28.73</td><td>34.66</td><td>40.70</td><td>22.55</td><td>71.20</td><td>9.98</td><td class="average-column">34.64</td></tr>
+                <tr><th scope="row">MathInstruct <span>262K</span></th><td>35.87</td><td>40.69</td><td>52.05</td><td>32.93</td><td>73.05</td><td><strong>11.98</strong></td><td class="average-column">41.10</td></tr>
+                <tr class="ours-row"><th scope="row">TOME-Math <span>364.6K</span></th><td><strong>43.86</strong></td><td><strong>43.96</strong></td><td><strong>57.43</strong></td><td><strong>42.98</strong></td><td><strong>76.55</strong></td><td>10.19</td><td class="average-column"><strong>45.83</strong></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="experiment-note" id="benchmark-note">Same Qwen3-30B-A3B-Base backbone; one epoch per corpus. SFT = supervised fine-tuning; AIME-26 = AIME 2026. Scores (%); Avg. is the mean across six benchmarks; bold marks the best result. K / M = thousand / million training examples; pp = percentage points.</p>
+          <p class="experiment-note" id="benchmark-key"><strong>Our evaluation sets.</strong> <strong>TOME-LongForm:</strong> 300 proof-heavy exercises from held-out textbooks across six mathematical subjects, scored for proof correctness. <strong>TOME-Objective:</strong> 145 multidisciplinary objective questions, scored by final-answer equivalence.</p>
+        </article>
+
+        <article class="experiment-block retrieval-result reveal" id="retrieval" aria-labelledby="retrieval-result-title">
+          <div class="retrieval-copy">
+            <div class="experiment-heading">
+
+              <h3 id="retrieval-result-title">Useful structure.<br>Even without fine-tuning.</h3>
+            </div>
+            <p class="experiment-copy">Retrieving propositions and local proof obligations raises TOME-LongForm pass@1 from <strong>13.25% to 17.38%</strong>.</p>
+            <p class="experiment-note">Frozen base model, 300 problems. All four retrieval policies share the same context-token budget.</p>
+          </div>
+          <figure class="retrieval-evidence reveal" aria-label="Effect of retrieved context on TOME-LongForm" aria-describedby="retrieval-key">
+            <div class="retrieval-chart">
+              <p class="retrieval-chart-label">Single-solution success rate · Pass@1 (%)</p>
+              <ol class="retrieval-bars">
+                <li style="--bar-width: 66.25%; --bar-delay: 0ms;">
+                  <div class="retrieval-bar-label"><span>No retrieved context</span><strong>13.25%</strong></div>
+                  <span class="retrieval-bar-track" aria-hidden="true"><i class="retrieval-bar-fill"></i></span>
+                </li>
+                <li style="--bar-width: 70.00%; --bar-delay: 55ms;">
+                  <div class="retrieval-bar-label"><span>Random context from the same book</span><strong>14.00%</strong></div>
+                  <span class="retrieval-bar-track" aria-hidden="true"><i class="retrieval-bar-fill"></i></span>
+                </li>
+                <li style="--bar-width: 73.55%; --bar-delay: 110ms;">
+                  <div class="retrieval-bar-label"><span>Context from nearby chapters</span><strong>14.71%</strong></div>
+                  <span class="retrieval-bar-track" aria-hidden="true"><i class="retrieval-bar-fill"></i></span>
+                </li>
+                <li style="--bar-width: 77.70%; --bar-delay: 165ms;">
+                  <div class="retrieval-bar-label"><span>Structure-guided proposition–proof pairs</span><strong>15.54%</strong></div>
+                  <span class="retrieval-bar-track" aria-hidden="true"><i class="retrieval-bar-fill"></i></span>
+                </li>
+                <li class="retrieval-best" style="--bar-width: 86.90%; --bar-delay: 220ms;">
+                  <div class="retrieval-bar-label"><span>Proposition–proof pairs + explicit proof steps</span><strong>17.38%</strong></div>
+                  <span class="retrieval-bar-track" aria-hidden="true"><i class="retrieval-bar-fill"></i></span>
+                </li>
+              </ol>
+              <div class="retrieval-axis" aria-hidden="true"><span>0</span><span>5</span><span>10</span><span>15</span><span>20%</span></div>
+            </div>
+            <figcaption class="experiment-note" id="retrieval-key">Structure-guided retrieval uses chapter order and proposition dependencies. The final setting also retrieves Gap QA to make intermediate proof steps explicit. Scores are averaged across six subjects.</figcaption>
+          </figure>
+        </article>
+
+        <article class="experiment-block" aria-labelledby="curriculum-result-title">
+          <div class="experiment-heading reveal">
+
+            <h3 id="curriculum-result-title">Better order. Greater gains with scale.</h3>
+            <p class="experiment-copy">Forward–Gap leads in all <strong><span class="count-up" data-count="18">18</span> subject–scale settings</strong>. Every schedule improves as the supervision budget grows.</p>
+          </div>
+          <figure class="experiment-figure reveal">
+            <div class="experiment-figure-frame selectable-figure-frame" style="--figure-ratio: 383.109 / 162.497; --figure-mobile-ratio: 127.7 / 478;">
+              <object id="figure-4" class="selectable-figure" data="assets/figure-4.svg?v=13" data-mobile="assets/figure-4-mobile.svg?v=13" data-svg-figure type="image/svg+xml" aria-label="Figure 4: curriculum learning across six subjects and three training budgets"><a href="assets/figure-4.svg?v=13" target="_blank" rel="noopener">Open figure 4</a></object>
+              <a class="figure-open" href="assets/figure-4.svg?v=13" target="_blank" rel="noopener" aria-label="Open figure 4 in a new tab" title="Open figure">↗</a>
+            </div>
+            <figcaption class="experiment-note"><strong>Pass@16</strong> = the share of problems solved by at least one of 16 generated solutions. Budgets count training tokens (M = million); all schedules use the same examples within each subject and budget.<span class="figure-key"><strong>Shuffle:</strong> random order. <strong>Forward–Gap / Reverse–Gap:</strong> forward / reverse chapter order, with Gap QA first at each stage. <strong>Forward–Mix:</strong> forward chapter order, mixing Proof and Gap QA within each stage.</span></figcaption>
+          </figure>
+        </article>
+
+        <article class="experiment-block" aria-labelledby="breadth-result-title">
+          <div class="experiment-heading reveal">
+
+            <h3 id="breadth-result-title">Broader coverage. Transferable reasoning.</h3>
+            <p class="experiment-copy">More textbook sources improve learning at a fixed budget, while subject-specific supervision transfers across mathematical fields.</p>
+          </div>
+          <figure class="experiment-figure reveal">
+            <div class="experiment-figure-frame selectable-figure-frame" style="--figure-ratio: 394.447 / 135.928; --figure-mobile-ratio: 197.224 / 276;">
+              <object id="figure-5" class="selectable-figure" data="assets/figure-5.svg?v=13" data-mobile="assets/figure-5-mobile.svg?v=13" data-svg-figure type="image/svg+xml" aria-label="Figure 5: source breadth and cross-subject transfer"><a href="assets/figure-5.svg?v=13" target="_blank" rel="noopener">Open figure 5</a></object>
+              <a class="figure-open" href="assets/figure-5.svg?v=13" target="_blank" rel="noopener" aria-label="Open figure 5 in a new tab" title="Open figure">↗</a>
+            </div>
+            <figcaption class="breadth-captions">
+              <p><strong>More sources, same budget.</strong> Expanding from 8 books (narrow–dense) to 16 books (broad–sparse) improves all six subjects by <strong><span class="count-up" data-count="3.3" data-decimals="1">3.3</span> percentage points on average</strong>, with the same 0.75M-token budget.</p>
+              <p><strong>Reasoning transfers across subjects.</strong> Cross-subject pass@16 averages <strong><span class="count-up" data-count="0.92" data-decimals="2">0.92</span>× the target specialist’s score</strong>. Values above 1 indicate performance exceeding that specialist.</p>
+            </figcaption>
+            <p class="experiment-note"><strong>Subject key:</strong> Alg. = Abstract algebra; Ana. = Mathematical analysis; Prob. = Probability; DG = Differential geometry; Disc. = Discrete mathematics; Top. = Topology. Heatmap rows show the training subject; columns show the evaluation subject.</p>
+          </figure>
+        </article>
+      </div>
+    </section>
+  </main>
+
+  <section id="bibtex" class="bibtex-placeholder" aria-label="BibTeX citation">
+    <!-- Reserved for the paper's BibTeX entry. -->
+  </section>
+
+  <script src="script.js?v=13"></script>
+</body>
+</html>
